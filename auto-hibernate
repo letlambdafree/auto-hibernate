@@ -1,0 +1,66 @@
+#!/bin/bash
+
+###REQUIREMENTS:
+# xprintidle gxmessage hibernate-script
+
+# the user running this script must have sudo access
+# to the "hibernate" command without passwd
+# "%wheel ALL=(ALL) NOPASSWD: /usr/bin/hibernate"
+# change "wheel" to "users" if the user doesn't have wheel access
+
+# Fall back to xmessage if gxmessage isn't available
+XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
+
+
+
+###VARIABLES:
+# 1hr=3600000ms
+settime=$(( 2 * 60 * 60 * 1000 ))
+
+# maximum 1 minute load average for hibernate
+maxloadavg=2
+
+# programs that should prohibit hibernate
+prohibits="prohibit-suspend emerge"
+
+
+
+###LOOP
+# infinite loop for hibernate
+while true ; do
+   sleep 30
+   idletime=$(xprintidle)
+   if (( $idletime > $settime )); then
+      hibernate=1
+   fi
+   if (( $hibernate )); then
+      # check the current 1 min loadaverage
+      loadavg=$(cat /proc/loadavg | cut -c 1)
+      if (( $loadavg < $maxloadavg )); then
+          (( lowload++ ))
+      else
+          lowload=0
+      fi
+      if (( $lowload > 5)); then
+          for each in $prohibits ; do
+               countapp=$(ps aux | grep -c $each)
+               if (( $countapp >= 2 )); then
+                   hibernate=0
+                   break
+               fi
+          done
+          if (( $hibernate )); then
+              # reset variables
+              lowload=0
+              idletime=0
+              hibernate=0
+              $XMESSAGE -timeout 30 \
+                        The system will sleep in 30 seconds, \
+                        press esc to abort.
+              if (( ! $? )); then
+               sudo hibernate
+              fi
+          fi
+      fi
+   fi
+done
