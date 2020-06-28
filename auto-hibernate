@@ -21,7 +21,7 @@ settime=$(( 2 * 60 * 60 * 1000 ))
 maxloadavg=2
 
 # programs that should prohibit hibernate
-prohibits="prohibit-suspend emerge"
+prohibits="prohibit-hibernate emerge"
 
 
 
