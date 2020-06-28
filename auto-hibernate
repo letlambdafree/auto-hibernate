@@ -28,7 +28,7 @@ prohibits="prohibit-suspend emerge"
 ###LOOP
 # infinite loop for hibernate
 while true ; do
-   sleep 30
+   sleep 60
    idletime=$(xprintidle)
    if (( $idletime > $settime )); then
       hibernate=1
