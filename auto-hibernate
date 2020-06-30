@@ -21,7 +21,7 @@ settime=$(( 2 * 60 * 60 * 1000 ))
 maxloadavg=2
 
 # programs that should prohibit hibernate
-prohibits="prohibit-hibernate emerge"
+prohibits="prohibit-hibernate emerge genkernel"
 
 
 
@@ -43,8 +43,7 @@ while true ; do
       fi
       if (( $lowload > 5)); then
           for each in $prohibits ; do
-               countapp=$(ps aux | grep -c $each)
-               if (( $countapp >= 2 )); then
+               if (( $(ps -A | grep -c $each) )); then
                    hibernate=0
                    break
                fi
