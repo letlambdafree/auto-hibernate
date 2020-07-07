@@ -15,13 +15,16 @@ XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
 
 ###VARIABLES:
 # 1hr=3600000ms
-settime=$(( 1.5 * 60 * 60 * 1000 ))
+SETTIME=$(( 1.5 * 60 * 60 * 1000 ))
 
 # maximum 1 minute load average for hibernate
-maxloadavg=2
+MAXLOADAVG=2
 
 # programs that should prohibit hibernate
-prohibits="prohibit-hibernate emerge genkernel"
+PROHIBITS=(prohibit-hibernate emerge genkernel)
+
+# command executed
+COMMAND="sudo hibernate"
 
 
 
@@ -30,19 +33,19 @@ prohibits="prohibit-hibernate emerge genkernel"
 while true ; do
    sleep 60
    idletime=$(xprintidle)
-   if (( $idletime > $settime )); then
+   if (( $idletime > $SETTIME )); then
       hibernate=1
    fi
    if (( $hibernate )); then
       # check the current 1 min loadaverage
       loadavg=$(cat /proc/loadavg | cut -c 1)
-      if (( $loadavg < $maxloadavg )); then
+      if (( $loadavg < $MAXLOADAVG )); then
           (( lowload++ ))
       else
           lowload=0
       fi
       if (( $lowload > 5)); then
-          for each in $prohibits ; do
+          for each in "$PROHIBITS[@]" ; do
                if (( $(ps -A | grep -c $each) )); then
                    hibernate=0
                    break
@@ -57,7 +60,7 @@ while true ; do
                         The system will sleep in 30 seconds, \
                         press esc to abort.
               if (( ! $? )); then
-               sudo hibernate
+                  "$COMMAND"
               fi
           fi
       fi
