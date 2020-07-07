@@ -15,7 +15,7 @@ XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
 
 ###VARIABLES:
 # 1hr=3600000ms
-settime=$(( 2 * 60 * 60 * 1000 ))
+settime=$(( 1.5 * 60 * 60 * 1000 ))
 
 # maximum 1 minute load average for hibernate
 maxloadavg=2
