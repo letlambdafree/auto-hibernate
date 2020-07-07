@@ -1,6 +1,5 @@
 #!/bin/bash
 
-###REQUIREMENTS:
 # xprintidle gxmessage hibernate-script
 
 # the user running this script must have sudo access
@@ -8,12 +7,11 @@
 # "%wheel ALL=(ALL) NOPASSWD: /usr/bin/hibernate"
 # change "wheel" to "users" if the user doesn't have wheel access
 
+
+
 # Fall back to xmessage if gxmessage isn't available
 XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
 
-
-
-###VARIABLES:
 # 1hr=3600000ms
 SETTIME=$(( 1.5 * 60 * 60 * 1000 ))
 
@@ -28,7 +26,6 @@ COMMAND="sudo hibernate"
 
 
 
-###LOOP
 # infinite loop for hibernate
 while true ; do
    sleep 60
@@ -45,7 +42,7 @@ while true ; do
           lowload=0
       fi
       if (( $lowload > 5)); then
-          for each in "$PROHIBITS[@]" ; do
+          for each in $PROHIBITS[@] ; do
                if (( $(ps -A | grep -c $each) )); then
                    hibernate=0
                    break
@@ -60,7 +57,7 @@ while true ; do
                         The system will sleep in 30 seconds, \
                         press esc to abort.
               if (( ! $? )); then
-                  "$COMMAND"
+                  eval "$COMMAND"
               fi
           fi
       fi
