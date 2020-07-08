@@ -13,7 +13,9 @@
 XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
 
 # 1hr=3600000ms
-SETTIME=$(( 1.5 * 60 * 60 * 1000 ))
+# error in bash but ok in zsh
+# SETTIME=$(( 1.5 * 60 * 60 * 1000 ))
+SETTIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 
 # maximum 1 minute load average for hibernate
 MAXLOADAVG=2
