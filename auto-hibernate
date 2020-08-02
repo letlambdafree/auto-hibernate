@@ -45,7 +45,7 @@ while true ; do
       fi
       if (( $lowload > 5)); then
           for each in $PROHIBITS[@] ; do
-               if (( $(ps -A | grep -c $each) )); then
+               if (( $(ps aux | grep -c $each) > 1 )); then
                    hibernate=0
                    break
                fi
