@@ -13,7 +13,7 @@
 XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
 
 # 1hr=3600000ms
-# error in bash but ok in zsh
+# error in bash but ok in zsh about float number
 # SETTIME=$(( 1.5 * 60 * 60 * 1000 ))
 SETTIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 
@@ -21,7 +21,12 @@ SETTIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 MAXLOADAVG=2
 
 # programs that should prohibit hibernate
-PROHIBITS=(prohibit-hibernate emerge genkernel)
+PROHIBITS=(prohibit-hibernate
+           emerge
+           make
+           cmake
+           gcc
+           genkernel)
 
 # command executed
 COMMAND="sudo hibernate"
@@ -33,7 +38,10 @@ while true ; do
    sleep 60
    idletime=$(xprintidle)
    if (( $idletime > $SETTIME )); then
-      hibernate=1
+       hibernate=1
+   fi
+   if (( $(ps aux | grep -c activate-hibernate) > 1 )); then
+       hibernate=1
    fi
    if (( $hibernate )); then
       # check the current 1 min loadaverage
@@ -43,7 +51,7 @@ while true ; do
       else
           lowload=0
       fi
-      if (( $lowload > 5)); then
+      if (( $lowload > 2)); then
           for each in $PROHIBITS[@] ; do
                if (( $(ps aux | grep -c $each) > 1 )); then
                    hibernate=0
@@ -55,6 +63,7 @@ while true ; do
               lowload=0
               idletime=0
               hibernate=0
+              pkill activate-hibernate
               $XMESSAGE -timeout 30 \
                         The system will sleep in 30 seconds, \
                         press esc to abort.
