@@ -63,7 +63,7 @@ while true ; do
               lowload=0
               idletime=0
               hibernate=0
-              pkill activate-hibernate
+              pkill -inf activate-hibernate
               $XMESSAGE -timeout 30 \
                         The system will sleep in 30 seconds, \
                         press esc to abort.
