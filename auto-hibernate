@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# xprintidle gxmessage hibernate-script
+# xprintidle gxmessage hibernate-script slock
 
 # the user running this script must have sudo access
 # to the "hibernate" command without passwd
@@ -29,7 +29,7 @@ PROHIBITS=(prohibit-hibernate
            genkernel)
 
 # command executed
-COMMAND="sudo hibernate"
+COMMAND="sudo hibernate && slock"
 
 
 
