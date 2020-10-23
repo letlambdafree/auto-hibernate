@@ -35,42 +35,42 @@ COMMAND="sudo hibernate && slock"
 
 # infinite loop for hibernate
 while true ; do
-   sleep 60
-   idletime=$(xprintidle)
-   if (( $idletime > $SETTIME )); then
-       hibernate=1
-   fi
-   if (( $(ps aux | grep -c activate-hibernate) > 1 )); then
-       hibernate=1
-   fi
-   if (( $hibernate )); then
-      # check the current 1 min loadaverage
-      loadavg=$(cat /proc/loadavg | cut -c 1)
-      if (( $loadavg < $MAXLOADAVG )); then
-          (( lowload++ ))
-      else
-          lowload=0
-      fi
-      if (( $lowload > 2)); then
-          for each in $PROHIBITS[@] ; do
-               if (( $(ps aux | grep -c $each) > 1 )); then
-                   hibernate=0
-                   break
-               fi
-          done
-          if (( $hibernate )); then
-              # reset variables
-              lowload=0
-              idletime=0
-              hibernate=0
-              pkill -inf activate-hibernate
-              $XMESSAGE -timeout 30 \
-                        The system will sleep in 30 seconds, \
-                        press esc to abort.
-              if (( ! $? )); then
-                  eval "$COMMAND"
-              fi
-          fi
-      fi
-   fi
+    sleep 60
+    idletime=$(xprintidle)
+    if (( $idletime > $SETTIME )) ; then
+        hibernate=1
+    fi
+    if (( $(ps aux | grep -c activate-hibernate) > 1 )) ; then
+        hibernate=1
+    fi
+    if (( $hibernate )); then
+        # check the current 1 min loadaverage
+        loadavg=$(cat /proc/loadavg | cut -c 1)
+        if (( $loadavg < $MAXLOADAVG )) ; then
+            (( lowload++ ))
+        else
+            lowload=0
+        fi
+        if (( $lowload > 2)); then
+            for each in $PROHIBITS[@] ; do
+                if (( $(ps aux | grep -c $each) > 1 )) ; then
+                    hibernate=0
+                    break
+                fi
+            done
+            if (( $hibernate )); then
+                # reset variables
+                lowload=0
+                idletime=0
+                hibernate=0
+                pkill -inf activate-hibernate
+                $XMESSAGE -timeout 30 \
+                          The system will sleep in 30 seconds, \
+                          press esc to abort.
+                if (( ! $? )); then
+                    eval "$COMMAND"
+                fi
+            fi
+        fi
+    fi
 done
