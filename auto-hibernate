@@ -2,75 +2,164 @@
 
 # xprintidle gxmessage hibernate-script slock
 
+# Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANT-ABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
+
+
+
+### description:
+#
 # the user running this script must have sudo access
 # to the "hibernate" command without passwd
 # "%wheel ALL=(ALL) NOPASSWD: /usr/bin/hibernate"
 # change "wheel" to "users" if the user doesn't have wheel access
+#
 
 
 
+### TODO
+#
+
+
+
+set -u # avoid a undeclared variable
+# set -x # for debugging
+g_arg=( "$@" )
 # Fall back to xmessage if gxmessage isn't available
 XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
-
 # 1hr=3600000ms
-# error in bash but ok in zsh about float number
-# SETTIME=$(( 1.5 * 60 * 60 * 1000 ))
-SETTIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
-
+SET_TIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 # maximum 1 minute load average for hibernate
-MAXLOADAVG=2
-
+MAX_LOAD_AVG=2
 # programs that should prohibit hibernate
-PROHIBITS=(prohibit-hibernate
-           emerge
-           make
-           cmake
-           gcc
-           genkernel)
+PROHIBITS=( prohibit-hibernate
+            emerge
+            gcc
+            cmake
+            make
+            c++
+            genkernel )
+CHECK_INTERVAL=60
+TIME_OUT=30
+COMMANDS="sudo hibernate && slock"
 
-# command executed
-COMMAND="sudo hibernate && slock"
-
-
-
-# infinite loop for hibernate
-while true ; do
-    sleep 60
-    idletime=$(xprintidle)
-    if (( $idletime > $SETTIME )) ; then
-        hibernate=1
+check_idle_time() {
+    idle_time=$(xprintidle)
+    if (( idle_time > SET_TIME )); then
+        swith_on=1
     fi
-    if (( $(ps aux | grep -c activate-hibernate) > 1 )) ; then
-        hibernate=1
+}
+
+check_activate-hibernate() {
+    local ps1=$(ps -A | grep -c activate-hibernate)
+    if (( ps1 )); then
+        swith_on=1
     fi
-    if (( $hibernate )); then
-        # check the current 1 min loadaverage
-        loadavg=$(cat /proc/loadavg | cut -c 1)
-        if (( $loadavg < $MAXLOADAVG )) ; then
-            (( lowload++ ))
-        else
-            lowload=0
-        fi
-        if (( $lowload > 2)); then
-            for each in $PROHIBITS[@] ; do
-                if (( $(ps aux | grep -c $each) > 1 )) ; then
-                    hibernate=0
-                    break
-                fi
-            done
-            if (( $hibernate )); then
-                # reset variables
-                lowload=0
-                idletime=0
-                hibernate=0
-                pkill -inf activate-hibernate
-                $XMESSAGE -timeout 30 \
-                          The system will sleep in 30 seconds, \
-                          press esc to abort.
-                if (( ! $? )); then
-                    eval "$COMMAND"
+}
+
+check_hibernate() {
+    local low_load=0
+    local idle_time=0
+    local swith_on=0
+    local load_avg=0
+    local p
+    # infinite loop for hibernate
+    while true; do
+        sleep $CHECK_INTERVAL
+        check_idle_time
+        check_activate-hibernate
+        if (( swith_on )); then
+            # check the current 1 min load average
+            load_avg=$(cat /proc/loadavg | cut -c 1)
+            if (( load_avg < MAX_LOAD_AVG )); then
+                ((low_load++))
+            else
+                low_load=0
+            fi
+            if (( low_load > 3 )); then
+                for p in $PROHIBITS[@]; do
+                    if (( $(ps -A | grep -c $p) )); then
+                        swith_on=0
+                        break
+                    fi
+                done
+                if (( swith_on )); then
+                    #
+                    # reset variables
+                    #
+                    low_load=0
+                    idle_time=0
+                    swith_on=0
+                    pkill -inf activate-hibernate
+                    $XMESSAGE -timeout $TIME_OUT \
+                              The system will hibernate in $TIME_OUT seconds, \
+                              press ESC to abort.
+                    if (( ! $? )); then
+                        #
+                        # -f, --force
+                        # Ignore errors and suspend anyway.
+                        #
+                        # -k, --kill
+                        # Kill processes if needed, in order to suspend.
+                        #
+                        # -v<n>, --verbosity=<n>
+                        # Change verbosity level
+                        # (0 = errors only, 3 = verbose, 4 = debug)
+                        #
+                        # -n, --no-suspend
+                        # Disables actually suspending the system.
+                        # This is useful for testing
+                        # the hibernate script itself.
+                        #
+                        # --dry-run
+                        # Don't actually do anything.
+                        #
+                        eval "$COMMANDS"
+                    fi
                 fi
             fi
         fi
-    fi
-done
+    done
+    return 0
+}
+
+test_hibernate () {
+    SET_TIME=10
+    CHECK_INTERVAL=10
+    TIME_OUT=10
+    COMMANDS="sudo hibernate -n"
+    check_hibernate
+}
+
+invalid_option() {
+    printf "\n %s\e[1;38;5;88m %s$\e[0m %s\n" \
+           'There is no' \
+           "'${g_arg[0]}'" \
+           'option.'
+    cat << HEREDOC
+ Usage : auto-hibernate option
+ Option: '' check hibernate
+         -t test hibernate
+HEREDOC
+exit 2
+}
+
+
+
+# set -x
+case ${g_arg[0]:-} in
+    ''          ) check_hibernate ;;
+    -t | --test ) test_hibernate  ;;
+    *           ) invalid_option  ;;
+esac
+# set +x
