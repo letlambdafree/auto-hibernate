@@ -53,11 +53,14 @@ CHECK_INTERVAL=60
 TIME_OUT=30
 COMMANDS="sudo hibernate && slock"
 
+
+
 check_idle_time() {
     idle_time=$(xprintidle)
     if (( idle_time > SET_TIME )); then
         swith_on=1
     fi
+    return 0
 }
 
 check_activate-hibernate() {
@@ -65,6 +68,59 @@ check_activate-hibernate() {
     if (( ps1 )); then
         swith_on=1
     fi
+    return 0
+}
+
+check_load_avg() {
+    # check the current 1 min load average
+    load_avg=$(cat /proc/loadavg | cut -c 1)
+    if (( load_avg < MAX_LOAD_AVG )); then
+        ((low_load++))
+    else
+        low_load=0
+    fi
+    return 0
+}
+
+check_prohibits() {
+    for p in $PROHIBITS[@]; do
+        if (( $(ps -A | grep -c $p) )); then
+            swith_on=0
+            break
+        fi
+    done
+    return 0
+}
+
+reset_variables() {
+    low_load=0
+    idle_time=0
+    swith_on=0
+    pkill -inf activate-hibernate
+    return 0
+}
+execute_commands() {
+    #
+    # -f, --force
+    # Ignore errors and suspend anyway.
+    #
+    # -k, --kill
+    # Kill processes if needed, in order to suspend.
+    #
+    # -v<n>, --verbosity=<n>
+    # Change verbosity level
+    # (0 = errors only, 3 = verbose, 4 = debug)
+    #
+    # -n, --no-suspend
+    # Disables actually suspending the system.
+    # This is useful for testing
+    # the hibernate script itself.
+    #
+    # --dry-run
+    # Don't actually do anything.
+    #
+    eval "$COMMANDS"
+    return 0
 }
 
 check_hibernate() {
@@ -79,52 +135,16 @@ check_hibernate() {
         check_idle_time
         check_activate-hibernate
         if (( swith_on )); then
-            # check the current 1 min load average
-            load_avg=$(cat /proc/loadavg | cut -c 1)
-            if (( load_avg < MAX_LOAD_AVG )); then
-                ((low_load++))
-            else
-                low_load=0
-            fi
-            if (( low_load > 3 )); then
-                for p in $PROHIBITS[@]; do
-                    if (( $(ps -A | grep -c $p) )); then
-                        swith_on=0
-                        break
-                    fi
-                done
+            check_load_avg
+            if (( low_load > 2 )); then
+                check_prohibits
                 if (( swith_on )); then
-                    #
-                    # reset variables
-                    #
-                    low_load=0
-                    idle_time=0
-                    swith_on=0
-                    pkill -inf activate-hibernate
+                    reset_variables
                     $XMESSAGE -timeout $TIME_OUT \
                               The system will hibernate in $TIME_OUT seconds, \
                               press ESC to abort.
                     if (( ! $? )); then
-                        #
-                        # -f, --force
-                        # Ignore errors and suspend anyway.
-                        #
-                        # -k, --kill
-                        # Kill processes if needed, in order to suspend.
-                        #
-                        # -v<n>, --verbosity=<n>
-                        # Change verbosity level
-                        # (0 = errors only, 3 = verbose, 4 = debug)
-                        #
-                        # -n, --no-suspend
-                        # Disables actually suspending the system.
-                        # This is useful for testing
-                        # the hibernate script itself.
-                        #
-                        # --dry-run
-                        # Don't actually do anything.
-                        #
-                        eval "$COMMANDS"
+                        execute_commands
                     fi
                 fi
             fi
@@ -139,6 +159,7 @@ test_hibernate () {
     TIME_OUT=10
     COMMANDS="sudo hibernate -n"
     check_hibernate
+    return 0
 }
 
 invalid_option() {
