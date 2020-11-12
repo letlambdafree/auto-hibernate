@@ -35,6 +35,10 @@
 set -u # avoid a undeclared variable
 # set -x # for debugging
 g_arg=( "$@" )
+g_arg0="$0"
+SCRIPT_VERSION=0.1.0
+SCRIPT_PATH=$(realpath "$g_arg0")
+SCRIPT_NAME="${SCRIPT_PATH##*/}"
 # Fall back to xmessage if gxmessage isn't available
 XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
 # 1hr=3600000ms
@@ -42,17 +46,16 @@ SET_TIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 # maximum 1 minute load average for hibernate
 MAX_LOAD_AVG=2
 # programs that should prohibit hibernate
-PROHIBITS=( prohibit-hibernate
-            emerge
-            gcc
-            cmake
-            make
-            c++
+PROHIBITS=( prohibit-hibernate emerge gcc
+            cmake              make   c++
             genkernel )
 CHECK_INTERVAL=60
 TIME_OUT=30
 COMMANDS="sudo hibernate && slock"
-
+#
+# error code
+#
+E_INVALID_OPTION=64
 
 
 check_idle_time() {
@@ -168,19 +171,56 @@ invalid_option() {
            "'${g_arg[0]}'" \
            'option.'
     cat << HEREDOC
- Usage : auto-hibernate option
+ Usage : auto-hibernate [option]
  Option: '' check hibernate
          -t test hibernate
+         -e edit this script
+         -v prints this script version
+         -h prints this help
 HEREDOC
-exit 2
+exit $E_INVALID_OPTION
+}
+
+edit_this() {
+    $EDITOR "$g_arg0"
+    return 0
+}
+
+print_version() {
+    printf '\n%s: %s\n\n' \
+           "$SCRIPT_NAME" \
+           "$SCRIPT_VERSION"
+    return 0
+}
+
+help_usage() {
+    cat << HEREDOC
+
+Usage: auto-hibernate [option]
+
+Options:
+''             ) hibernate after pre-setting idle time
+-t | --test    ) tests hibernate with --dry-run or -n
+-e | --edit    ) edit this script
+-v | --version ) prints this script version
+-h | --help    ) prints this help
+
+Exit Status:
+Returns 0 unless an invalid option is supplied or an error occurs.
+
+HEREDOC
+    return 0
 }
 
 
 
 # set -x
 case ${g_arg[0]:-} in
-    ''          ) check_hibernate ;;
-    -t | --test ) test_hibernate  ;;
-    *           ) invalid_option  ;;
+    ''             ) check_hibernate ;;
+    -t | --test    ) test_hibernate  ;;
+    -e | --edit    ) edit_this       ;;
+    -v | --version ) print_version   ;;
+    -h | --help    ) help_usage      ;;
+    *              ) invalid_option  ;;
 esac
 # set +x
