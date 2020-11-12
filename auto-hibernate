@@ -62,14 +62,8 @@ check_idle_time() {
     idle_time=$(xprintidle)
     if (( idle_time > SET_TIME )); then
         swith_on=1
-    fi
-    return 0
-}
-
-check_activate-hibernate() {
-    local ps1=$(ps -A | grep -c activate-hibernate)
-    if (( ps1 )); then
-        swith_on=1
+    else
+        swith_on=0
     fi
     return 0
 }
@@ -99,7 +93,6 @@ reset_variables() {
     low_load=0
     idle_time=0
     swith_on=0
-    pkill -inf activate-hibernate
     return 0
 }
 execute_commands() {
@@ -136,7 +129,6 @@ check_hibernate() {
     while true; do
         sleep $CHECK_INTERVAL
         check_idle_time
-        check_activate-hibernate
         if (( swith_on )); then
             check_load_avg
             if (( low_load > 2 )); then
