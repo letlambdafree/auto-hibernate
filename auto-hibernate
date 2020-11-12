@@ -51,6 +51,25 @@ PROHIBITS=( prohibit-hibernate emerge gcc
             genkernel )
 CHECK_INTERVAL=60
 TIME_OUT=30
+#
+# -f, --force
+# Ignore errors and suspend anyway.
+#
+# -k, --kill
+# Kill processes if needed, in order to suspend.
+#
+# -v<n>, --verbosity=<n>
+# Change verbosity level
+# (0 = errors only, 3 = verbose, 4 = debug)
+#
+# -n, --no-suspend
+# Disables actually suspending the system.
+# This is useful for testing
+# the hibernate script itself.
+#
+# --dry-run
+# Don't actually do anything.
+#
 COMMANDS="sudo hibernate && slock"
 #
 # error code
@@ -95,27 +114,14 @@ reset_variables() {
     swith_on=0
     return 0
 }
+
 execute_commands() {
-    #
-    # -f, --force
-    # Ignore errors and suspend anyway.
-    #
-    # -k, --kill
-    # Kill processes if needed, in order to suspend.
-    #
-    # -v<n>, --verbosity=<n>
-    # Change verbosity level
-    # (0 = errors only, 3 = verbose, 4 = debug)
-    #
-    # -n, --no-suspend
-    # Disables actually suspending the system.
-    # This is useful for testing
-    # the hibernate script itself.
-    #
-    # --dry-run
-    # Don't actually do anything.
-    #
-    eval "$COMMANDS"
+    $XMESSAGE -timeout $TIME_OUT \
+              The system will hibernate in $TIME_OUT seconds, \
+              press ESC to abort.
+    if (( ! $? )); then
+        eval "$COMMANDS"
+    fi
     return 0
 }
 
@@ -135,12 +141,7 @@ check_hibernate() {
                 check_prohibits
                 if (( swith_on )); then
                     reset_variables
-                    $XMESSAGE -timeout $TIME_OUT \
-                              The system will hibernate in $TIME_OUT seconds, \
-                              press ESC to abort.
-                    if (( ! $? )); then
-                        execute_commands
-                    fi
+                    execute_commands
                 fi
             fi
         fi
