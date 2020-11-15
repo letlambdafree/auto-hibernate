@@ -44,11 +44,9 @@ XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
 # 1hr=3600000ms
 SET_TIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 # maximum 1 minute load average for hibernate
-MAX_LOAD_AVG=2
+MAX_LOAD_AVG=3
 # programs that should prohibit hibernate
-PROHIBITS=( prohibit-hibernate emerge gcc
-            cmake              make   c++
-            genkernel )
+PROHIBITS=( emerge genkernel )
 CHECK_INTERVAL=60
 TIME_OUT=30
 #
@@ -77,6 +75,7 @@ COMMANDS="sudo hibernate && slock"
 E_INVALID_OPTION=64
 
 
+
 check_idle_time() {
     idle_time=$(xprintidle)
     if (( idle_time > SET_TIME )); then
@@ -99,7 +98,7 @@ check_load_avg() {
 }
 
 check_prohibits() {
-    for p in $PROHIBITS[@]; do
+    for p in ${PROHIBITS[@]}; do
         if (( $(ps -A | grep -c $p) )); then
             swith_on=0
             break
@@ -150,26 +149,29 @@ check_hibernate() {
 }
 
 test_hibernate () {
-    SET_TIME=10
-    CHECK_INTERVAL=10
-    TIME_OUT=10
+    SET_TIME=5
+    CHECK_INTERVAL=5
+    TIME_OUT=5
     COMMANDS="sudo hibernate -n"
     check_hibernate
     return 0
 }
 
 invalid_option() {
-    printf "\n %s\e[1;38;5;88m %s$\e[0m %s\n" \
+    printf "\n %s\e[1;38;5;124m %s\e[0m %s\n" \
            'There is no' \
            "'${g_arg[0]}'" \
            'option.'
     cat << HEREDOC
+
  Usage : auto-hibernate [option]
+
  Option: '' check hibernate
          -t test hibernate
          -e edit this script
          -v prints this script version
          -h prints this help
+
 HEREDOC
 exit $E_INVALID_OPTION
 }
