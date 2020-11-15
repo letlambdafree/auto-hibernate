@@ -46,7 +46,7 @@ SET_TIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 # maximum 1 minute load average for hibernate
 MAX_LOAD_AVG=3
 # programs that should prohibit hibernate
-EXCLUDE_COMMANDS=( emerge genkernel )
+EXCLUDE_COMMANDS=( emerge make cmake gcc genkernel )
 CHECK_INTERVAL=60
 TIME_OUT=30
 #
@@ -92,8 +92,8 @@ check_idle_time() {
 }
 
 check_exclude_commands() {
-    for p in ${EXCLUDE_COMMANDS[@]}; do
-        if (( $(ps -A | grep -c $p) )); then
+    for e in ${EXCLUDE_COMMANDS[@]}; do
+        if (( $(ps -A | grep -c $e) )); then
             exclude_on=1
             break
         else
@@ -138,7 +138,7 @@ check_hibernate() {
     local exclude_on=0
     local load_avg=0
     local low_load=0
-    local p
+    local e
     # infinite loop for hibernate
     while true; do
         sleep $CHECK_INTERVAL
@@ -171,7 +171,7 @@ invalid_option() {
            'There is no' \
            "'${g_arg[0]}'" \
            'option.'
-    cat << HEREDOC
+    cat <<EOF
 
  Usage : auto-hibernate [option]
 
@@ -181,7 +181,7 @@ invalid_option() {
          -v prints this script version
          -h prints this help
 
-HEREDOC
+EOF
 exit $E_INVALID_OPTION
 }
 
@@ -198,7 +198,7 @@ print_version() {
 }
 
 help_usage() {
-    cat << HEREDOC
+    cat <<EOF
 
 Usage: auto-hibernate [option]
 
@@ -212,7 +212,7 @@ Options:
 Exit Status:
 Returns 0 unless an invalid option is supplied or an error occurs.
 
-HEREDOC
+EOF
     return 0
 }
 
