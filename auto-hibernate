@@ -39,8 +39,7 @@ g_arg0="$0"
 SCRIPT_VERSION=0.1.0
 SCRIPT_PATH=$(realpath "$g_arg0")
 SCRIPT_NAME="${SCRIPT_PATH##*/}"
-# Fall back to xmessage if gxmessage isn't available
-XMESSAGE=$(which gxmessage) || XMESSAGE=xmessage
+XMESSAGE=$(which gxmessage)
 # 1hr=3600000ms
 SET_TIME=$(awk 'BEGIN {print 1.5 * 60 * 60 * 1000}')
 # maximum 1 minute load average for hibernate
@@ -78,6 +77,8 @@ E_INVALID_OPTION=64
 
 check_idle_time() {
     #
+    # while true; do xprintidle; echo; done
+    #
     # mpv resets xprintidle every 10 secs
     #
     # add 'stop-screensaver=no' in mpv.conf for workaround
@@ -92,6 +93,7 @@ check_idle_time() {
 }
 
 check_exclude_commands() {
+    local e
     for e in ${EXCLUDE_COMMANDS[@]}; do
         if (( $(ps -A | grep -c $e) )); then
             exclude_on=1
@@ -123,7 +125,7 @@ reset_variables() {
 }
 
 execute_commands() {
-    $XMESSAGE -timeout $TIME_OUT \
+    ${XMESSAGE:-xmessage} -timeout $TIME_OUT \
               The system will hibernate in $TIME_OUT seconds, \
               press ESC to abort.
     if (( ! $? )); then
@@ -138,7 +140,6 @@ check_hibernate() {
     local exclude_on=0
     local load_avg=0
     local low_load=0
-    local e
     # infinite loop for hibernate
     while true; do
         sleep $CHECK_INTERVAL
@@ -161,7 +162,7 @@ test_hibernate () {
     SET_TIME=5
     CHECK_INTERVAL=5
     TIME_OUT=5
-    COMMANDS="sudo hibernate -n"
+    COMMANDS="sudo hibernate --no-suspend"
     check_hibernate
     return 0
 }
@@ -204,7 +205,7 @@ Usage: auto-hibernate [option]
 
 Options:
 ''             ) hibernate after pre-setting idle time
--t | --test    ) tests hibernate with --dry-run or -n
+-t | --test    ) tests hibernate with --no-suspend
 -e | --edit    ) edit this script
 -v | --version ) prints this script version
 -h | --help    ) prints this help
@@ -228,3 +229,5 @@ case ${g_arg[0]:-} in
     *              ) invalid_option  ;;
 esac
 # set +x
+
+#  LocalWords:  xprintidle
